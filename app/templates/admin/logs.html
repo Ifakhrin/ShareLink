@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log Aktivitas - Bank Mandiri Admin ShareLink{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Audit Log Aktivitas Sistem</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Catatan riwayat aktivitas login, pembuatan akun, upload, download, dan aksi administratif.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Audit Activity Logs</h2>
+        <span class="status-badge status-AVAILABLE">{{ logs|length }} Entry Log</span>
+    </div>
+
+    {% if logs %}
+    <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Waktu (UTC)</th>
+                    <th>Aksi (Action)</th>
+                    <th>Pengguna</th>
+                    <th>Transfer ID</th>
+                    <th>Detail / Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        <strong style="color: var(--mandiri-navy); font-size: 0.85rem; letter-spacing: 0.03em;">{{ log.action }}</strong>
+                    </td>
+                    <td>
+                        {% if log.user %}
+                        <strong>{{ log.user.name }}</strong> <small style="color: var(--text-subtle);">(@{{ log.user.username }})</small>
+                        {% else %}
+                        <span style="color: var(--text-subtle);">System</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ '#' ~ log.transfer_id if log.transfer_id else '-' }}</td>
+                    <td style="font-size: 0.9rem;">{{ log.details or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Belum ada catatan log aktivitas.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

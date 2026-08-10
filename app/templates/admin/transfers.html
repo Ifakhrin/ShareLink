@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring Transfer - Bank Mandiri Admin ShareLink{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Monitoring Transfer File (Administratif)</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Pantau metadata pertukaran file seluruh pengguna sistem.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Seluruh Transfer File</h2>
+        <span class="status-badge status-AVAILABLE">{{ transfers|length }} Data Transfer</span>
+    </div>
+
+    {% if transfers %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Judul Transfer</th>
+                    <th>Pengirim</th>
+                    <th>Penerima</th>
+                    <th>Lampiran / Total Ukuran</th>
+                    <th>Status</th>
+                    <th>Waktu Dibuat</th>
+                    <th>Masa Kadaluwarsa</th>
+                    <th style="text-align: right;">Aksi Admin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transfers %}
+                <tr>
+                    <td>#{{ t.id }}</td>
+                    <td>
+                        <strong style="color: var(--text-main);">{{ t.subject }}</strong><br>
+                        <code style="font-size: 0.75rem; color: var(--text-subtle);">{{ t.transfer_code }}</code>
+                    </td>
+                    <td>
+                        <strong>{{ t.sender.name }}</strong><br>
+                        <small style="color: var(--text-subtle);">@{{ t.sender.username }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ t.receiver.name }}</strong><br>
+                        <small style="color: var(--text-subtle);">@{{ t.receiver.username }}</small>
+                    </td>
+                    <td>{{ t.total_files }} file ({{ (t.total_size / (1024*1024))|round(2) }} MB)</td>
+                    <td><span class="status-badge status-{{ t.status }}">{{ t.status }}</span></td>
+                    <td>{{ t.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td>
+                        <span style="color: #B45309;">
+                            {{ t.expires_at.strftime('%d %b %Y, %H:%M') if t.expires_at else '-' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        {% if t.status not in ['DELETED', 'CANCELLED', 'EXPIRED'] %}
+                        <form action="{{ url_for('admin.delete_transfer', transfer_id=t.id) }}" method="POST" style="display: inline;" data-confirm="Hapus transfer {{ t.transfer_code }} secara administratif? Seluruh file fisik akan dibersihkan dari server.">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus Paksa</button>
+                        </form>
+                        {% else %}
+                        <span style="color: var(--text-subtle); font-size: 0.85rem;">Terhapus</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Belum ada data transfer tercatat di dalam sistem.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

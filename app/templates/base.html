@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bank Mandiri - Internal File Transfer System{% endblock %}</title>
+
+    <meta name="description"
+        content="Sistem pertukaran file sementara internal Bank Mandiri. File otomatis terhapus setelah berhasil diunduh.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Header Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{% if current_user %}{% if current_user.is_admin %}{{ url_for('admin.dashboard') }}{% else %}{{ url_for('user.dashboard') }}{% endif %}{% else %}{{ url_for('auth.login') }}{% endif %}"
+                class="brand-logo" id="brandLogoLink">
+                <span style="color: var(--mandiri-gold); font-weight: 800;">mandiri</span>
+                <span style="font-weight: 600; font-size: 1rem; color: #FFFFFF;">ShareLink</span>
+            </a>
+
+            {% if current_user %}
+            <button type="button" class="nav-toggle" id="navToggleBtn" aria-label="Menu Navigasi">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+            <ul class="nav-links">
+                {% if current_user.is_admin %}
+                <!-- ADMIN NAVIGATION -->
+                <li>
+                    <a href="{{ url_for('admin.dashboard') }}"
+                        class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+                        id="navAdminDashboard">Dashboard</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin.users') }}"
+                        class="nav-link {% if request.endpoint and 'users' in request.endpoint %}active{% endif %}"
+                        id="navAdminUsers">Pengguna</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin.transfers') }}"
+                        class="nav-link {% if request.endpoint == 'admin.transfers' %}active{% endif %}"
+                        id="navAdminTransfers">Transfer</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin.logs') }}"
+                        class="nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}"
+                        id="navAdminLogs">Aktivitas</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.profile') }}"
+                        class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}"
+                        id="navAdminProfile">Profil</a>
+                </li>
+                {% else %}
+                <!-- USER NAVIGATION -->
+                <li>
+                    <a href="{{ url_for('user.dashboard') }}"
+                        class="nav-link {% if request.endpoint == 'user.dashboard' %}active{% endif %}"
+                        id="navUserDashboard">Dashboard</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user.send') }}"
+                        class="nav-link {% if request.endpoint == 'user.send' %}active{% endif %}"
+                        id="navUserSend">Kirim File</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user.inbox') }}"
+                        class="nav-link {% if request.endpoint == 'user.inbox' %}active{% endif %}"
+                        id="navUserInbox">File Masuk</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user.sent') }}"
+                        class="nav-link {% if request.endpoint == 'user.sent' %}active{% endif %}" id="navUserSent">File
+                        Terkirim</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.profile') }}"
+                        class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}"
+                        id="navUserProfile">Profil</a>
+                </li>
+                {% endif %}
+
+                <li>
+                    <div class="user-badge">
+                        <span><strong>{{ current_user.name }}</strong></span>
+                        <span class="role-pill {% if current_user.is_admin %}admin{% endif %}">{{ current_user.role
+                            }}</span>
+                    </div>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm" id="logoutBtn">Keluar</a>
+                </li>
+            </ul>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alert-container" id="flashAlertContainer">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                <div>{{ message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if error_code %}
+        <div class="card" style="text-align: center; padding: 4rem 2rem;">
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #DC2626;">Error {{ error_code }}
+            </h1>
+            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 2rem auto;">{{ error_message }}</p>
+            <a href="{% if current_user %}{% if current_user.is_admin %}{{ url_for('admin.dashboard') }}{% else %}{{ url_for('user.dashboard') }}{% endif %}{% else %}{{ url_for('auth.login') }}{% endif %}"
+                class="btn btn-primary">Kembali ke Halaman Utama</a>
+        </div>
+        {% else %}
+        {% block content %}{% endblock %}
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        Bank Mandiri ShareLink &copy; 2026 Internal Temporary File Transfer System. Rahasia & Terbatas.
+    </footer>
+
+    <!-- Global JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

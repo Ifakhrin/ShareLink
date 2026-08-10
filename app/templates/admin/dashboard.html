@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrator - Bank Mandiri ShareLink{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Dashboard Administrator</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Ringkasan statistik sistem dan monitoring server pertukaran file.</p>
+</div>
+
+<!-- Summary Metrics Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="card" style="margin-bottom: 0; padding: 1.25rem; text-align: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Total Pengguna</span>
+        <span style="font-size: 2rem; font-weight: 700; color: var(--mandiri-navy);">{{ total_users }}</span>
+        <small style="color: #047857; display: block; margin-top: 0.2rem;">{{ active_users }} Aktif</small>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; padding: 1.25rem; text-align: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Total Transfer</span>
+        <span style="font-size: 2rem; font-weight: 700; color: var(--mandiri-navy);">{{ total_transfers }}</span>
+        <small style="color: var(--text-subtle); display: block; margin-top: 0.2rem;">Keseluruhan</small>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; padding: 1.25rem; text-align: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Transfer Aktif</span>
+        <span style="font-size: 2rem; font-weight: 700; color: #1D4ED8;">{{ active_transfers }}</span>
+        <small style="color: #1D4ED8; display: block; margin-top: 0.2rem;">Available / Downloading</small>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; padding: 1.25rem; text-align: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Transfer Selesai</span>
+        <span style="font-size: 2rem; font-weight: 700; color: #0369A1;">{{ completed_transfers }}</span>
+        <small style="color: #0369A1; display: block; margin-top: 0.2rem;">Telah Diunduh</small>
+    </div>
+
+    <div class="card" style="margin-bottom: 0; padding: 1.25rem; text-align: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Transfer Expired</span>
+        <span style="font-size: 2rem; font-weight: 700; color: #B45309;">{{ expired_transfers }}</span>
+        <small style="color: #B45309; display: block; margin-top: 0.2rem;">Kadaluwarsa (Cleaned)</small>
+    </div>
+</div>
+
+<!-- Admin Action Shortcut Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--mandiri-navy); margin-bottom: 0.4rem;">Manajemen Pengguna</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;">Tambah akun pengguna baru, nonaktifkan akun, atau reset password pengguna.</p>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm" id="btnAdminManageUsers">Kelola Pengguna</a>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--mandiri-navy); margin-bottom: 0.4rem;">Monitoring Transfer</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;">Pantau metadata transfer file aktif dan hapus transfer secara administratif jika diperlukan.</p>
+        <a href="{{ url_for('admin.transfers') }}" class="btn btn-secondary btn-sm" id="btnAdminManageTransfers">Monitoring Transfer</a>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--mandiri-navy); margin-bottom: 0.4rem;">Aktivitas Sistem</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;">Lihat audit log lengkap aktivitas login, transfer, upload, download, dan aksi admin.</p>
+        <a href="{{ url_for('admin.logs') }}" class="btn btn-secondary btn-sm" id="btnAdminManageLogs">Lihat Audit Log</a>
+    </div>
+</div>
+
+<!-- Recent Logs Preview -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Aktivitas Sistem Terbaru</h3>
+        <a href="{{ url_for('admin.logs') }}" class="btn btn-secondary btn-sm">Lihat Semua Log</a>
+    </div>
+
+    {% if recent_logs %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Aksi</th>
+                    <th>Pengguna</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td><strong style="color: var(--mandiri-navy);">{{ log.action }}</strong></td>
+                    <td>{{ log.user.username if log.user else 'System' }}</td>
+                    <td style="font-size: 0.85rem;">{{ log.details or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Belum ada aktivitas tercatat.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}File Terkirim (Sent) - Bank Mandiri ShareLink{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">File Terkirim (Sent)</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Kelola pengiriman file aktif dan lihat riwayat pengiriman Anda.</p>
+    </div>
+    <a href="{{ url_for('user.send') }}" class="btn btn-primary btn-sm">+ Kirim File Baru</a>
+</div>
+
+<!-- SECTION A: TRANSFER AKTIF -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Transfer Aktif</h2>
+        <span class="status-badge status-AVAILABLE">{{ active_transfers|length }} Berlangsung</span>
+    </div>
+
+    {% if active_transfers %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Judul Transfer</th>
+                    <th>Penerima</th>
+                    <th>Lampiran</th>
+                    <th>Waktu Dikirim</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in active_transfers %}
+                <tr>
+                    <td>
+                        <strong style="font-size: 0.95rem; color: var(--text-main);">{{ t.subject }}</strong>
+                        {% if t.message %}
+                        <p style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+                            {{ t.message }}
+                        </p>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ t.receiver.name }}</strong><br>
+                        <small style="color: var(--text-subtle);">@{{ t.receiver.username }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ t.total_files }} file</strong> • {{ (t.total_size / (1024*1024))|round(2) }} MB
+                    </td>
+                    <td>{{ t.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td>
+                        {% if t.status == 'AVAILABLE' %}
+                        <span class="status-badge status-AVAILABLE">Belum diunduh</span>
+                        {% elif t.status == 'DOWNLOADING' %}
+                        <span class="status-badge status-DOWNLOADING">Sedang diunduh</span>
+                        {% else %}
+                        <span class="status-badge status-{{ t.status }}">{{ t.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('user.transfer_detail', transfer_id=t.id) }}" class="btn btn-secondary btn-sm">Detail</a>
+                        {% if t.status in ['AVAILABLE', 'PENDING'] %}
+                        <form action="{{ url_for('user.cancel', transfer_id=t.id) }}" method="POST" style="display: inline;" data-confirm="Apakah Anda yakin ingin membatalkan transfer ini? Semua file fisik akan langsung dihapus dari server.">
+                            <button type="submit" class="btn btn-danger btn-sm">Batalkan</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>Belum ada file yang dikirim.</h3>
+        <p>Pengiriman file aktif yang sedang berlangsung akan muncul di sini.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- SECTION B: RIWAYAT TRANSFER -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Riwayat Transfer (Read-Only)</h2>
+        <span class="status-badge status-COMPLETED">{{ history_transfers|length }} Catatan</span>
+    </div>
+
+    {% if history_transfers %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Judul Transfer</th>
+                    <th>Penerima</th>
+                    <th>Lampiran</th>
+                    <th>Waktu Dikirim</th>
+                    <th>Status Riwayat</th>
+                    <th style="text-align: right;">Aksi Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in history_transfers %}
+                <tr>
+                    <td>
+                        <strong style="font-size: 0.95rem; color: var(--text-main);">{{ t.subject }}</strong>
+                    </td>
+                    <td>
+                        <strong>{{ t.receiver.name }}</strong><br>
+                        <small style="color: var(--text-subtle);">@{{ t.receiver.username }}</small>
+                    </td>
+                    <td>{{ t.total_files }} file • {{ (t.total_size / (1024*1024))|round(2) }} MB</td>
+                    <td>{{ t.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td>
+                        {% if t.status == 'COMPLETED' %}
+                        <span class="status-badge status-COMPLETED">Sudah diterima</span>
+                        {% elif t.status == 'EXPIRED' %}
+                        <span class="status-badge status-EXPIRED">Kadaluarsa</span>
+                        {% elif t.status == 'CANCELLED' %}
+                        <span class="status-badge status-CANCELLED">Dibatalkan</span>
+                        {% else %}
+                        <span class="status-badge status-DELETED">File sudah dihapus</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('user.transfer_detail', transfer_id=t.id) }}" class="btn btn-secondary btn-sm">
+                            Lihat Catatan
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>Belum ada riwayat transfer.</h3>
+        <p>Transfer terkirim yang telah selesai, kadaluarsa, atau dibatalkan akan tersimpan sebagai riwayat di sini.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

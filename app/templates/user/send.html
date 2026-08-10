@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Kirim File - Bank Mandiri ShareLink{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Kirim File Sementara</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Lengkapi penerima, judul, pesan pengantar, dan lampiran file (Maksimal 1 GB/file, Total 2 GB).</p>
+        </div>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary btn-sm">Batal / Dashboard</a>
+    </div>
+
+    <!-- Client Error Banner -->
+    <div id="clientError" class="alert alert-danger" style="display: none; margin-bottom: 1.5rem;"></div>
+
+    <div class="card">
+        <form action="{{ url_for('user.send') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+            
+            <!-- A. Recipient Select -->
+            <div class="form-group">
+                <label for="receiverSelect" class="form-label">Penerima (Tepat 1 Pengguna) <span style="color: #DC2626;">*</span></label>
+                <select id="receiverSelect" name="receiver_id" class="form-select" required>
+                    <option value="" disabled selected>-- Pilih Penerima --</option>
+                    {% for r in recipients %}
+                    <option value="{{ r.id }}" data-name="{{ r.name }}">{{ r.name }} (@{{ r.username }})</option>
+                    {% endfor %}
+                </select>
+                {% if not recipients %}
+                <small style="color: #B45309; display: block; margin-top: 0.35rem;">
+                    Belum ada pengguna lain yang dapat menerima file saat ini.
+                </small>
+                {% endif %}
+            </div>
+
+            <!-- B. Judul / Subject Input -->
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <label for="subjectInput" class="form-label" style="margin-bottom: 0;">Judul Transfer <span style="color: #DC2626;">*</span></label>
+                    <span id="subjectCounter" style="font-size: 0.8rem; color: var(--text-subtle);">0 / 150</span>
+                </div>
+                <input type="text" id="subjectInput" name="subject" class="form-control" placeholder="Contoh: Laporan Rekonsiliasi Kas Bulanan" maxlength="150" required>
+            </div>
+
+            <!-- C. Pesan / Message Textarea -->
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <label for="messageInput" class="form-label" style="margin-bottom: 0;">Pesan Pengantar (Opsional)</label>
+                    <span id="messageCounter" style="font-size: 0.8rem; color: var(--text-subtle);">0 / 2000</span>
+                </div>
+                <textarea id="messageInput" name="message" class="form-control" rows="4" placeholder="Tuliskan pesan atau catatan pengantar file di sini..." maxlength="2000"></textarea>
+            </div>
+
+            <!-- D. Dropzone / Multi-File Selection -->
+            <div class="form-group">
+                <label class="form-label">File Lampiran <span style="color: #DC2626;">*</span></label>
+                <div class="upload-dropzone" id="dropzone">
+                    <h3 style="font-size: 1rem; font-weight: 600; color: var(--mandiri-navy);">Seret & Lepas file di sini</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">atau klik untuk menelusuri berkas komputer</p>
+                    <input type="file" id="fileInput" name="files" class="file-input" multiple required>
+                </div>
+            </div>
+
+            <!-- Files Summary Table -->
+            <div id="fileListContainer" style="display: none; margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 600;">Daftar File Lampiran:</h4>
+                    <div style="font-size: 0.875rem; color: var(--mandiri-navy); font-weight: 600;">
+                        <span id="totalFilesCount">0 file</span> | <span id="totalFilesSize">0 MB</span>
+                    </div>
+                </div>
+                
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    <table class="table" style="margin-bottom: 0;">
+                        <thead>
+                            <tr>
+                                <th>Nama File</th>
+                                <th>Ukuran</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selectedFilesTable">
+                            <!-- Populated dynamically by upload.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                    <span id="progressPercentText" style="color: var(--mandiri-navy); font-weight: 600;">Mengunggah... 0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- Pre-Submit Preview Trigger Button -->
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary">Batal</a>
+                <button type="button" class="btn btn-primary" id="previewBtn" disabled>
+                    Pratinjau & Kirim
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- PRE-SUBMIT PREVIEW MODAL -->
+<dialog id="previewModal" style="background: #FFFFFF; color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 2rem; max-width: 580px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin: auto;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--mandiri-navy);">Pratinjau Pengiriman File</h2>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">Periksa kembali detail pengiriman sebelum mengonfirmasi.</p>
+
+    <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        <div style="margin-bottom: 0.85rem;">
+            <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Kepada:</span>
+            <strong id="previewReceiverName">-</strong>
+        </div>
+        
+        <div style="margin-bottom: 0.85rem;">
+            <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Judul:</span>
+            <strong id="previewSubjectText" style="color: var(--text-main);">-</strong>
+        </div>
+
+        <div style="margin-bottom: 0.85rem;">
+            <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Pesan Pengantar:</span>
+            <div id="previewMessageText" style="color: var(--text-muted); font-size: 0.875rem; white-space: pre-wrap; background: #FFFFFF; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--radius-sm); margin-top: 0.25rem;">(Tanpa Pesan)</div>
+        </div>
+
+        <div>
+            <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Lampiran:</span>
+            <strong id="previewAttachmentSummary" style="color: var(--mandiri-navy);">-</strong>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" id="closePreviewBtn">Kembali</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmitBtn">Kirim File</button>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Manajemen Pengguna - Bank Mandiri Admin ShareLink{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Manajemen Pengguna</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Kelola akun pengguna internal yang memiliki akses ke layanan pertukaran file.</p>
+    </div>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary" id="btnAdminAddUser">
+        + Tambah Pengguna
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Daftar Pengguna Terdaftar</h2>
+        <span class="status-badge status-AVAILABLE">{{ users|length }} Total User</span>
+    </div>
+
+    {% if users %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nama Lengkap</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Waktu Dibuat</th>
+                    <th style="text-align: right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>#{{ u.id }}</td>
+                    <td><strong>{{ u.name }}</strong></td>
+                    <td><code>@{{ u.username }}</code></td>
+                    <td>
+                        <span class="role-pill {% if u.is_admin %}admin{% endif %}">{{ u.role }}</span>
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                        <span class="status-badge status-AVAILABLE">Aktif</span>
+                        {% else %}
+                        <span class="status-badge status-CANCELLED">Nonaktif</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ u.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+                        
+                        {% if u.id != current_user.id %}
+                        <form action="{{ url_for('admin.toggle_user_status', user_id=u.id) }}" method="POST" style="display: inline;" data-confirm="Apakah Anda yakin ingin {% if u.is_active %}menonaktifkan{% else %}mengaktifkan{% endif %} akun '{{ u.username }}'?">
+                            <button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %} btn-sm">
+                                {% if u.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <button type="button" class="btn btn-secondary btn-sm btn-reset-pw" data-id="{{ u.id }}" data-username="{{ u.username }}">Reset Password</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Belum ada pengguna terdaftar.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal / Form for Reset Password -->
+<dialog id="resetPasswordModal" style="background: #FFFFFF; color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; max-width: 400px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin: auto;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--mandiri-navy); margin-bottom: 0.35rem;" id="modalTitle">Reset Password</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;" id="modalSubtitle">Masukkan password baru untuk pengguna.</p>
+
+    <form id="resetPasswordForm" method="POST" action="">
+        <div class="form-group">
+            <label for="modalNewPassword" class="form-label">Password Baru (Min 6 Karakter)</label>
+            <input type="password" id="modalNewPassword" name="new_password" class="form-control" placeholder="Password baru" required minlength="6">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary btn-sm" id="closeResetModalBtn">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm">Simpan Password</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('resetPasswordModal');
+    const resetButtons = document.querySelectorAll('.btn-reset-pw');
+    const closeBtn = document.getElementById('closeResetModalBtn');
+    const resetForm = document.getElementById('resetPasswordForm');
+    const modalTitle = document.getElementById('modalTitle');
+
+    resetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const userId = btn.getAttribute('data-id');
+            const username = btn.getAttribute('data-username');
+            modalTitle.textContent = `Reset Password: @${username}`;
+            resetForm.action = `/admin/users/${userId}/reset-password`;
+            modal.showModal();
+        });
+    });
+
+    if (closeBtn && modal) {
+        closeBtn.addEventListener('click', () => modal.close());
+    }
+});
+</script>
+{% endblock %}

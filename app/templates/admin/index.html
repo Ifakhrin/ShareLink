@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - ShareLink System{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.8rem; font-weight: 700;">Admin Management Panel</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Monitoring seluruh transfer file dan audit log aktivitas sistem.</p>
+</div>
+
+<!-- All Transfers List -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span>📊</span> Semua Transfer File Sistem
+        </h2>
+        <span class="status-badge status-AVAILABLE">{{ transfers|length }} Total Transfer</span>
+    </div>
+
+    {% if transfers %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Kode Transfer</th>
+                    <th>Pengirim</th>
+                    <th>Penerima</th>
+                    <th>File / Ukuran</th>
+                    <th>Status</th>
+                    <th>Waktu Dibuat</th>
+                    <th style="text-align: right;">Aksi Admin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transfers %}
+                <tr>
+                    <td>#{{ t.id }}</td>
+                    <td><code style="color: var(--cyan-accent);">{{ t.transfer_code }}</code></td>
+                    <td>{{ t.sender.username }}</td>
+                    <td>{{ t.receiver.username }}</td>
+                    <td>{{ t.total_files }} file ({{ (t.total_size / (1024*1024))|round(2) }} MB)</td>
+                    <td><span class="status-badge status-{{ t.status }}">{{ t.status }}</span></td>
+                    <td>{{ t.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('transfer.detail', transfer_id=t.id) }}" class="btn btn-secondary btn-sm">Detail</a>
+                        {% if t.status not in ['DELETED', 'CANCELLED', 'EXPIRED'] %}
+                        <form action="{{ url_for('admin.delete', transfer_id=t.id) }}" method="POST" style="display: inline;" data-confirm="Hapus transfer ini secara paksa sebagai Admin? File fisik akan segera dibersihkan.">
+                            <button type="submit" class="btn btn-danger btn-sm">Hapus Admin</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📂</div>
+        <p>Belum ada data transfer di dalam sistem.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Activity Logs Audit Trail -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span>📜</span> Audit Log Aktivitas (Transfer Logs)
+        </h2>
+    </div>
+
+    {% if logs %}
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Aksi (Action)</th>
+                    <th>Pengguna</th>
+                    <th>Transfer ID</th>
+                    <th>Detail / Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td><strong style="color: var(--cyan-accent);">{{ log.action }}</strong></td>
+                    <td>{{ log.user.username if log.user else 'System' }}</td>
+                    <td>{{ '#' ~ log.transfer_id if log.transfer_id else '-' }}</td>
+                    <td style="font-size: 0.9rem;">{{ log.details or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Belum ada log aktivitas tercatat.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

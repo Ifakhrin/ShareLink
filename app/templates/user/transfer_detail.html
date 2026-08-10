@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ transfer.subject }} - Bank Mandiri ShareLink{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+
+    <!-- Top Action Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <a href="{{ url_for('user.dashboard') }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.875rem;">← Kembali ke Dashboard</a>
+            <h1 style="font-size: 1.6rem; font-weight: 700; margin-top: 0.25rem; color: var(--mandiri-navy);">{{ transfer.subject }}</h1>
+        </div>
+
+        <div>
+            {% if transfer.sender_id == current_user.id and transfer.status in ['AVAILABLE', 'PENDING'] %}
+            <form action="{{ url_for('user.cancel', transfer_id=transfer.id) }}" method="POST" style="display: inline;" data-confirm="Apakah Anda yakin ingin membatalkan transfer ini? Semua file fisik akan langsung dihapus dari server.">
+                <button type="submit" class="btn btn-danger" id="btnCancelTransferUser">Batalkan Transfer</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status Banners -->
+    {% if transfer.status == 'COMPLETED' %}
+    <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+        <div><strong>Catatan Riwayat Transfer:</strong> File sudah dihapus dari penyimpanan setelah berhasil diterima. Metadata transfer disimpan sebagai riwayat read-only.</div>
+    </div>
+    {% elif transfer.status == 'CANCELLED' %}
+    <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+        <div><strong>Catatan Riwayat Transfer:</strong> Transfer telah dibatalkan oleh pengirim. File fisik telah dihapus dari penyimpanan.</div>
+    </div>
+    {% elif transfer.status == 'EXPIRED' %}
+    <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+        <div><strong>Catatan Riwayat Transfer:</strong> Masa simpan transfer telah kadaluarsa. Sesuai batas 24 jam, file fisik telah otomatis dibersihkan.</div>
+    </div>
+    {% elif transfer.status == 'DELETED' %}
+    <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+        <div><strong>Catatan Riwayat Transfer:</strong> File sudah dihapus dari penyimpanan.</div>
+    </div>
+    {% endif %}
+
+    <!-- Meta Info Card -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Judul Transfer:</span>
+                <strong style="font-size: 1.2rem; color: var(--text-main);">{{ transfer.subject }}</strong>
+            </div>
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Status Transfer:</span>
+                {% if transfer.status == 'AVAILABLE' %}
+                <span class="status-badge status-AVAILABLE">Belum diunduh</span>
+                {% elif transfer.status == 'DOWNLOADING' %}
+                <span class="status-badge status-DOWNLOADING">Sedang diunduh</span>
+                {% elif transfer.status == 'COMPLETED' %}
+                <span class="status-badge status-COMPLETED">Sudah diterima</span>
+                {% elif transfer.status == 'EXPIRED' %}
+                <span class="status-badge status-EXPIRED">Kadaluarsa</span>
+                {% elif transfer.status == 'CANCELLED' %}
+                <span class="status-badge status-CANCELLED">Dibatalkan</span>
+                {% else %}
+                <span class="status-badge status-DELETED">File sudah dihapus</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; font-size: 0.9rem; margin-bottom: 1.5rem;">
+            <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.8rem;">Dari:</span>
+                <strong>{{ transfer.sender.name }}</strong> (@{{ transfer.sender.username }})
+            </div>
+            <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.8rem;">Kepada:</span>
+                <strong>{{ transfer.receiver.name }}</strong> (@{{ transfer.receiver.username }})
+            </div>
+            <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.8rem;">Tanggal Dikirim:</span>
+                <span>{{ transfer.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+            </div>
+            <div>
+                {% if transfer.status == 'COMPLETED' and transfer.completed_at %}
+                <span style="color: var(--text-muted); display: block; font-size: 0.8rem;">Tanggal Diterima:</span>
+                <span style="color: #0369A1; font-weight: 600;">
+                    {{ transfer.completed_at.strftime('%d %b %Y, %H:%M') }}
+                </span>
+                {% else %}
+                <span style="color: var(--text-muted); display: block; font-size: 0.8rem;">Berlaku Sampai:</span>
+                <span style="color: #B45309; font-weight: 600;">
+                    {{ transfer.expires_at.strftime('%d %b %Y, %H:%M') if transfer.expires_at else '-' }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Message Body Section -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+            <span style="color: var(--text-muted); display: block; font-size: 0.8rem; margin-bottom: 0.4rem; font-weight: 600;">Pesan Pengantar:</span>
+            {% if transfer.message %}
+            <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem; white-space: pre-wrap; font-size: 0.9rem; color: var(--text-main); line-height: 1.6;">{{ transfer.message }}</div>
+            {% else %}
+            <div style="color: var(--text-subtle); font-style: italic; font-size: 0.875rem;">(Tidak ada pesan pengantar)</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- File Metadata List -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                Lampiran File ({{ transfer.total_files }}) • Total {{ (transfer.total_size / (1024*1024))|round(2) }} MB
+            </h3>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nama File Lampiran</th>
+                        <th>Ukuran</th>
+                        <th>Status File</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in transfer.files %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>{{ f.original_filename }}</strong>
+                            {% if f.downloaded_at %}
+                            <br><small style="color: var(--text-subtle);">Diunduh pada: {{ f.downloaded_at.strftime('%d %b %Y, %H:%M') }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ (f.file_size / (1024*1024))|round(2) }} MB</td>
+                        <td>
+                            {% if f.status == 'AVAILABLE' %}
+                            <span class="status-badge status-AVAILABLE">Tersedia</span>
+                            {% elif f.status == 'DOWNLOADING' %}
+                            <span class="status-badge status-DOWNLOADING">Sedang diunduh</span>
+                            {% elif f.status in ['DOWNLOADED', 'DELETED'] %}
+                            <span class="status-badge status-COMPLETED">Diunduh & Dihapus</span>
+                            {% else %}
+                            <span class="status-badge status-{{ f.status }}">{{ f.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            {% if transfer.status in ['AVAILABLE', 'DOWNLOADING'] and f.status in ['AVAILABLE', 'DOWNLOADING'] and transfer.receiver_id == current_user.id %}
+                                <a href="{{ url_for('user.download', file_id=f.id) }}" class="btn btn-primary btn-sm" id="btnDownloadUserFile_{{ f.id }}">
+                                    Download File
+                                </a>
+                            {% else %}
+                                <span style="color: var(--text-subtle); font-size: 0.85rem; font-style: italic;">File sudah tidak tersedia</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <p style="font-size: 0.8rem; color: var(--text-subtle); margin-top: 1rem;">
+            *Catatan Keamanan: Segera setelah pengunduhan berhasil diselesaikan oleh peramban penerima, file fisik langsung terhapus dari penyimpanan. Metadata tersimpan sebagai riwayat read-only.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Saya - Bank Mandiri ShareLink{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 1rem auto 0 auto;">
+    <div style="margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">Pengaturan Profil</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Kelola nama tampilan dan kata sandi akun Anda.</p>
+    </div>
+
+    <div class="card">
+        <form action="{{ url_for('auth.profile') }}" method="POST">
+            <div class="form-group">
+                <label for="usernameDisplay" class="form-label">Username (Tidak dapat diubah)</label>
+                <input type="text" id="usernameDisplay" class="form-control" value="{{ current_user.username }}" disabled style="opacity: 0.7;">
+            </div>
+
+            <div class="form-group">
+                <label for="roleDisplay" class="form-label">Role Akun</label>
+                <input type="text" id="roleDisplay" class="form-control" value="{{ current_user.role|upper }}" disabled style="opacity: 0.7;">
+            </div>
+
+            <div class="form-group">
+                <label for="nameInput" class="form-label">Nama Lengkap</label>
+                <input type="text" id="nameInput" name="name" class="form-control" value="{{ current_user.name }}" required>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+            <div class="form-group">
+                <label for="passwordInput" class="form-label">Ubah Password Baru (Kosongkan jika tidak diubah)</label>
+                <input type="password" id="passwordInput" name="new_password" class="form-control" placeholder="Masukkan password baru (minimal 6 karakter)">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">
+                Simpan Perubahan
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

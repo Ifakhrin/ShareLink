@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_user %}Edit Pengguna @{{ edit_user.username }}{% else %}Tambah Pengguna Baru{% endif %} - Bank Mandiri Admin ShareLink{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 1rem auto 0 auto;">
+    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--mandiri-navy);">
+                {% if edit_user %}Edit Data Pengguna{% else %}Tambah Pengguna Baru{% endif %}
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                {% if edit_user %}Perbarui nama atau username akun pengguna.{% else %}Buat akun pengguna baru agar dapat mengakses layanan pertukaran file.{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">← Kembali</a>
+    </div>
+
+    <div class="card">
+        <form action="{% if edit_user %}{{ url_for('admin.edit_user', user_id=edit_user.id) }}{% else %}{{ url_for('admin.create_user') }}{% endif %}" method="POST">
+            
+            <div class="form-group">
+                <label for="nameInput" class="form-label">Nama Lengkap</label>
+                <input type="text" id="nameInput" name="name" class="form-control" placeholder="Contoh: Budi Santoso" value="{% if edit_user %}{{ edit_user.name }}{% endif %}" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="usernameInput" class="form-label">Username (Unik)</label>
+                <input type="text" id="usernameInput" name="username" class="form-control" placeholder="Contoh: budi" value="{% if edit_user %}{{ edit_user.username }}{% endif %}" required>
+            </div>
+
+            {% if not edit_user %}
+            <div class="form-group">
+                <label for="passwordInput" class="form-label">Password Sementara</label>
+                <input type="password" id="passwordInput" name="password" class="form-control" placeholder="Password awal (minimal 6 karakter)" required minlength="6">
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="roleSelect" class="form-label">Role Akun</label>
+                <select id="roleSelect" name="role" class="form-select">
+                    <option value="user" selected>User (Pengguna Layanan Transfer)</option>
+                </select>
+                <small style="color: var(--text-subtle); display: block; margin-top: 0.35rem;">
+                    *Peran akun pengguna standar untuk berkirim dan menerima file.
+                </small>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Batal</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if edit_user %}Simpan Perubahan{% else %}Buat Akun Pengguna{% endif %}
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
