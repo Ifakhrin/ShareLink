@@ -8,7 +8,10 @@ load_dotenv(BASE_DIR / '.env')
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-sharelink-internal-system-38917491')
     
-    db_path = os.environ.get('DATABASE_URL', 'sqlite:///' + str(BASE_DIR / 'instance' / 'app.db'))
+    instance_dir = BASE_DIR / 'instance'
+    os.makedirs(instance_dir, exist_ok=True)
+    
+    db_path = os.environ.get('DATABASE_URL', 'sqlite:///' + str(instance_dir / 'app.db'))
     if db_path.startswith('sqlite:///') and not db_path.startswith('sqlite:////'):
         # Normalize sqlite path relative to BASE_DIR if needed
         rel_path = db_path.replace('sqlite:///', '')
